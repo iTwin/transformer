@@ -21,10 +21,10 @@ jobs:
       with:
         version: 7.27.0
 
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v3
       with:
-        node-version: 18.16.0
+        node-version: "20"
         cache: 'pnpm'
 
     - name: Install dependencies
@@ -48,10 +48,10 @@ jobs:
       with:
         version: 7.27.0
 
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v3
       with:
-        node-version: 18.16.0
+        node-version: "20"
         cache: 'pnpm'
 
     - id: set-matrix
@@ -104,10 +104,10 @@ jobs:
       with:
         version: 7.27.0
 
-    - name: Use Node.js 18
+    - name: Use Node.js 20
       uses: actions/setup-node@v3
       with:
-        node-version: 18.16.0
+        node-version: "20"
         cache: 'pnpm'
 
     - name: Force dependency resolution
