@@ -380,6 +380,14 @@ export class IModelTransformer extends IModelExportHandler {
   public readonly context: IModelCloneContext;
   private _syncType?: SyncType;
 
+  // The following two maps are used to aid in entity recreation when changing exclude criteria. A recreated entity is one which has been deleted in one changeset and then re-inserted in another changeset. They both would point to the same targetId by virtue of having the same federationGuid.
+  // If the transformer is processing changesets which include an entity recreation and IModelExporter.excludeElement is called on the re-inserted entity id then the initial delete should propagate to the target.
+  // These maps aid in propagating the initial delete.
+  /** a map of the id in the target to the id of the re-inserted entity id */
+  private _targetIdToSourceInsertId = new Map<Id64String, Id64String>();
+  /** a map of the inserted entity Id to the deleted entity id. Note these ids are different but they are considered the same entity due to having the same federationguid. */
+  private _sourceInsertIdToSourceDeleteId = new Map<Id64String, Id64String>();
+
   /** The Id of the Element in the **target** iModel that represents the **source** repository as a whole and scopes its [ExternalSourceAspect]($backend) instances. */
   public get targetScopeElementId(): Id64String {
     return this._options.targetScopeElementId;
@@ -2375,6 +2383,19 @@ export class IModelTransformer extends IModelExportHandler {
     }
   }
 
+  /** Override of [IModelExportHandler.onSkipElement]($transformer) that is called when [IModelExporter]($transformer) excludes an element from being exported. */
+  public override onSkipElement(elementId: Id64String): void {
+    if (this._sourceInsertIdToSourceDeleteId.has(elementId)) {
+      const deleteId = this._sourceInsertIdToSourceDeleteId.get(elementId)!;
+      Logger.logInfo(
+        TransformerLoggerCategory.IModelTransformer,
+        "Adding element back to sourceDbChanges.deleteIds because it was excluded from being exported and detected as an entity recreation.",
+        { elementId, deleteId }
+      );
+      this.exporter.sourceDbChanges?.element.deleteIds.add(deleteId);
+    }
+  }
+
   /** Override of [IModelExportHandler.onDeleteRelationship]($transformer) that is called when [IModelExporter]($transformer) detects that a [Relationship]($backend) has been deleted from the source iModel.
    * This override propagates the delete to the target iModel via [IModelImporter.deleteRelationship]($transformer).
    */
@@ -2820,8 +2841,13 @@ export class IModelTransformer extends IModelExportHandler {
         const targetElementId = this.context.findTargetElementId(
           insertedSourceElementId
         );
-        if (Id64.isValid(targetElementId))
+        if (Id64.isValid(targetElementId)) {
           alreadyImportedElementInserts.add(targetElementId);
+          this._targetIdToSourceInsertId.set(
+            targetElementId,
+            insertedSourceElementId
+          );
+        }
       }
     );
     this.exporter.sourceDbChanges?.model.insertIds.forEach(
@@ -3020,6 +3046,19 @@ export class IModelTransformer extends IModelExportHandler {
       if (alreadyImportedElementInserts.has(targetId!)) {
         this.exporter.sourceDbChanges?.element.deleteIds.delete(
           changedInstanceId
+        );
+        const insertId = this._targetIdToSourceInsertId.get(targetId!);
+        // All IDs in alreadyImportedElementInserts are also added as a key to targetIdtoSourceInsertId map.
+        nodeAssert(insertId);
+        this._sourceInsertIdToSourceDeleteId.set(insertId, changedInstanceId);
+        Logger.logTrace(
+          TransformerLoggerCategory.IModelTransformer,
+          "Element recreation detected.",
+          {
+            targetId,
+            idWhenDeleted: changedInstanceId,
+            idWhenInserted: insertId,
+          }
         );
       }
       if (alreadyImportedModelInserts.has(targetId!)) {

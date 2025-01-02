@@ -1,0 +1,7 @@
+{
+  "type": "minor",
+  "comment": "support changing exclude criteria alongside entity recreations.",
+  "packageName": "@itwin/imodel-transformer",
+  "email": "22119573+nick4598@users.noreply.github.com",
+  "dependentChangeType": "patch"
+}

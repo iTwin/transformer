@@ -1302,7 +1302,11 @@ describe("IModelTransformerHub", () => {
         master: {
           sync: [
             "branch1",
-            { initTransformer: setForceOldRelationshipProvenanceMethod },
+            {
+              init: {
+                initTransformer: setForceOldRelationshipProvenanceMethod,
+              },
+            },
           ],
         },
       }, // first master<-branch1 reverse sync picking up new relationship from branch imodel
@@ -1346,7 +1350,11 @@ describe("IModelTransformerHub", () => {
         branch1: {
           sync: [
             "master",
-            { initTransformer: setForceOldRelationshipProvenanceMethod },
+            {
+              init: {
+                initTransformer: setForceOldRelationshipProvenanceMethod,
+              },
+            },
           ],
         },
       }, // forward sync master->branch1 to pick up delete of relationship
@@ -2975,6 +2983,101 @@ describe("IModelTransformerHub", () => {
     }
   });
 
+  for (const excludeBeforeTransformerInitialize of [true, false]) {
+    it.only(`should be able to handle entity recreation and a switching of exclude criteria ${excludeBeforeTransformerInitialize ? "before transformer initialize" : "after transformer initialize"}`, async () => {
+      // Create imodel, insert element
+      // Fork iModel
+      // push two changesets to source iModel, first one deletes element. second inserts element with same fed guid as the deleted element.
+      // Run transformation calling excludeElement on the inserted element id.
+      // expect that the delete from the first changeset makes its way to the target iModel.
+
+      const syncMasterToBranch = excludeBeforeTransformerInitialize
+        ? {
+            branch: {
+              sync: [
+                "master",
+                {
+                  init: {
+                    initExporterBeforeTransformerInitialize: async (
+                      exporter: IModelExporter
+                    ) => {
+                      exporter.excludeElement(idOfElementAfterRecreation);
+                    },
+                  },
+                },
+              ],
+            },
+          }
+        : {
+            branch: {
+              sync: [
+                "master",
+                {
+                  init: {
+                    initExporterAfterTransformerInitialize: async (
+                      exporter: IModelExporter
+                    ) => {
+                      exporter.excludeElement(idOfElementAfterRecreation);
+                    },
+                  },
+                },
+              ],
+            },
+          };
+
+      let propsOfElementToRecreate: ElementProps;
+      let idOfElementAfterRecreation: Id64String;
+
+      const timeline: Timeline = {
+        0: { master: { 1: 1 } },
+        1: { branch: { branch: "master" } },
+        2: {
+          assert({ master, branch }) {
+            const sourceId = IModelTestUtils.queryByUserLabel(master.db, "1");
+            expect(sourceId).to.not.be.undefined;
+            const elem = master.db.elements.getElement(sourceId);
+            expect(elem).to.not.be.undefined;
+            expect(elem.federationGuid).to.not.be.undefined;
+            propsOfElementToRecreate = elem.toJSON();
+            expect(IModelTestUtils.queryByUserLabel(branch.db, "1")).to.not.be
+              .undefined;
+          },
+        },
+        3: { master: { 1: deleted } },
+        4: {
+          master: {
+            manualUpdate(db) {
+              delete propsOfElementToRecreate.id;
+              propsOfElementToRecreate.userLabel = "recreated";
+              idOfElementAfterRecreation = db.elements.insertElement(
+                propsOfElementToRecreate
+              );
+              expect(idOfElementAfterRecreation).to.not.be.undefined;
+            },
+          },
+        },
+        5: syncMasterToBranch as any,
+        6: {
+          assert({ branch }) {
+            const elem = IModelTestUtils.queryByUserLabel(branch.db, "1");
+            const newElemLabel = IModelTestUtils.queryByUserLabel(
+              branch.db,
+              "recreated"
+            ); // we changed the userlabel in master so make sure that didnt make it to target
+            expect(elem).to.equal(Id64.invalid);
+            expect(newElemLabel).to.equal(Id64.invalid);
+          },
+        },
+      };
+
+      const { tearDown } = await runTimeline(timeline, {
+        iTwinId,
+        accessToken,
+      });
+      await tearDown();
+    });
+  }
+
   it("should preserve FederationGuid when element is recreated within the same changeset and across changesets", async () => {
     const sourceIModelName: string =
       IModelTransformerTestUtils.generateUniqueName("Source");
@@ -3797,7 +3900,10 @@ describe("IModelTransformerHub", () => {
             "branch",
             {
               expectThrow: false,
-              initTransformer: setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              init: {
+                initTransformer:
+                  setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              },
             },
           ],
         },
@@ -3894,7 +4000,10 @@ describe("IModelTransformerHub", () => {
           sync: [
             "branch",
             {
-              initTransformer: setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              init: {
+                initTransformer:
+                  setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              },
             },
           ],
         },
@@ -3947,7 +4056,10 @@ describe("IModelTransformerHub", () => {
           sync: [
             "master",
             {
-              initTransformer: setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              init: {
+                initTransformer:
+                  setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              },
             },
           ],
         },
@@ -4033,9 +4145,11 @@ describe("IModelTransformerHub", () => {
           sync: [
             "branch",
             {
-              initTransformer: (transformer) =>
-                (transformer["_options"]["branchRelationshipDataBehavior"] =
-                  "unsafe-migrate"),
+              init: {
+                initTransformer: (transformer) =>
+                  (transformer["_options"]["branchRelationshipDataBehavior"] =
+                    "unsafe-migrate"),
+              },
             },
           ], // Sync again with no changes except for ones which may get made by unsafe-migrate.
         },
@@ -4174,7 +4288,10 @@ describe("IModelTransformerHub", () => {
             "master",
             {
               expectThrow: false,
-              initTransformer: setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              init: {
+                initTransformer:
+                  setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              },
             },
           ],
         },
@@ -4185,7 +4302,10 @@ describe("IModelTransformerHub", () => {
             "branch",
             {
               expectThrow: false,
-              initTransformer: setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              init: {
+                initTransformer:
+                  setBranchRelationshipDataBehaviorToUnsafeMigrate,
+              },
             },
           ],
         },

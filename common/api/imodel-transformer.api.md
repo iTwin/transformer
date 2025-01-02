@@ -292,6 +292,7 @@ export class IModelTransformer extends IModelExportHandler {
     onExportModel(sourceModel: Model): void;
     onExportRelationship(sourceRelationship: Relationship): void;
     onExportSchema(schema: ECSchemaMetaData.Schema): Promise<void | ExportSchemaResult>;
+    onSkipElement(elementId: Id64String): void;
     onTransformElement(sourceElement: Element_2): ElementProps;
     protected onTransformElementAspect(sourceElementAspect: ElementAspect): ElementAspectProps;
     onTransformModel(sourceModel: Model, targetModeledElementId: Id64String): ModelProps;

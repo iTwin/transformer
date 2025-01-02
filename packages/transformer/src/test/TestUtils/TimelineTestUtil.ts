@@ -34,6 +34,7 @@ import {
 } from "../IModelTransformerUtils";
 import { IModelTestUtils } from "./IModelTestUtils";
 import { omit } from "@itwin/core-bentley";
+import { IModelExporter } from "../../IModelExporter";
 
 const saveAndPushChanges = async (
   accessToken: string,
@@ -253,7 +254,15 @@ export type TimelineStateChange =
         source: string,
         opts?: {
           since?: number;
-          initTransformer?: (transformer: IModelTransformer) => void;
+          init?: {
+            initTransformer?: (transformer: IModelTransformer) => void;
+            initExporterBeforeTransformerInitialize?: (
+              exporter: IModelExporter
+            ) => Promise<void>;
+            initExporterAfterTransformerInitialize?: (
+              exporter: IModelExporter
+            ) => Promise<void>;
+          };
           expectThrow?: boolean;
           assert?: {
             afterProcessChanges?: (transformer: IModelTransformer) => void;
@@ -357,7 +366,15 @@ export async function runTimeline(
           src: string,
           opts: {
             since?: number;
-            initTransformer?: (transformer: IModelTransformer) => void;
+            init?: {
+              initTransformer?: (transformer: IModelTransformer) => void;
+              initExporterBeforeTransformerInitialize?: (
+                exporter: IModelExporter
+              ) => Promise<void>;
+              initExporterAfterTransformerInitialize?: (
+                exporter: IModelExporter
+              ) => Promise<void>;
+            };
             expectThrow?: boolean;
             assert?: {
               afterProcessChanges?: (transformer: IModelTransformer) => void;
@@ -498,7 +515,7 @@ export async function runTimeline(
           syncSource,
           {
             since: startIndex,
-            initTransformer,
+            init: initFxns,
             expectThrow,
             assert: assertFxns,
           },
@@ -520,7 +537,18 @@ export async function runTimeline(
               : { index: undefined },
           },
         });
-        initTransformer?.(syncer);
+        await initFxns?.initExporterBeforeTransformerInitialize?.(
+          syncer.exporter
+        );
+
+        initFxns?.initTransformer?.(syncer);
+        if (initFxns?.initExporterAfterTransformerInitialize) {
+          // only call initialize if initExporterAfterTransformerInitialize is set, otherwise process() will take care of it.
+          // The expectThrow logic currently relies on process calling initialize
+          await initFxns?.initExporterAfterTransformerInitialize?.(
+            syncer.exporter
+          );
+        }
         try {
           await syncer.process();
           expect(
