@@ -53,10 +53,13 @@ import {
   Id64Array,
   Id64String,
   Logger,
+  LoggingMetaData,
   LogLevel,
 } from "@itwin/core-bentley";
 import {
   Code,
+  CodeScopeSpec,
+  CodeSpec,
   ColorDef,
   DefinitionElementProps,
   ElementProps,
@@ -615,6 +618,252 @@ describe("IModelTransformerHub", () => {
 
       await HubWrappers.closeAndDeleteBriefcaseDb(accessToken, sourceDb);
       await HubWrappers.closeAndDeleteBriefcaseDb(accessToken, targetDb);
+    } finally {
+      try {
+        await IModelHost.hubAccess.deleteIModel({
+          iTwinId,
+          iModelId: sourceIModelId,
+        });
+        await IModelHost.hubAccess.deleteIModel({
+          iTwinId,
+          iModelId: targetIModelId,
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log("can't destroy", err);
+      }
+    }
+  });
+
+  it("should log unresolved references", async () => {
+    const sourceIModelId = await HubWrappers.createIModel(
+      accessToken,
+      iTwinId,
+      "source"
+    );
+    let targetIModelId!: GuidString;
+    assert.isTrue(Guid.isGuid(sourceIModelId));
+
+    try {
+      // download and open briefcase on source imodel
+      const sourceBriefcase = await HubWrappers.downloadAndOpenBriefcase({
+        accessToken: await IModelHost.getAccessToken(),
+        iTwinId,
+        iModelId: sourceIModelId,
+        asOf: IModelVersion.latest().toJSON(),
+      });
+      await sourceBriefcase.locks.acquireLocks({
+        shared: "0x10",
+        exclusive: "0x1",
+      });
+      assert.isTrue(sourceBriefcase.isBriefcaseDb());
+      assert.isFalse(sourceBriefcase.isSnapshot);
+
+      // set up physical models
+      const sourceCategoryId = SpatialCategory.insert(
+        sourceBriefcase,
+        IModel.dictionaryId,
+        "SpatialCategory",
+        { color: ColorDef.green.toJSON() }
+      );
+
+      const sourceModelId = PhysicalModel.insert(
+        sourceBriefcase,
+        IModel.rootSubjectId,
+        "Physical"
+      );
+
+      const myPhysObjCodeSpec = CodeSpec.create(
+        sourceBriefcase,
+        "myPhysicalObjects",
+        CodeScopeSpec.Type.ParentElement
+      );
+
+      const myPhysObjCodeSpecId =
+        sourceBriefcase.codeSpecs.insert(myPhysObjCodeSpec);
+      const physicalObjects = [1, 2].map((x) => {
+        const code = new Code({
+          spec: myPhysObjCodeSpecId,
+          scope: sourceModelId,
+          value: `PhysicalObject(${x})`,
+        });
+        const props: PhysicalElementProps = {
+          classFullName: PhysicalObject.classFullName,
+          model: sourceModelId,
+          category: sourceCategoryId,
+          code,
+          userLabel: `PhysicalObject(${x})`,
+          geom: IModelTransformerTestUtils.createBox(Point3d.create(1, 1, 1)),
+          placement: Placement3d.fromJSON({ origin: { x }, angles: {} }),
+        };
+        const id = sourceBriefcase.elements.insertElement(props);
+        return { code, id };
+      });
+      const displayStyleId = DisplayStyle3d.insert(
+        sourceBriefcase,
+        IModel.dictionaryId,
+        "MyDisplayStyle",
+        {
+          excludedElements: physicalObjects.map((o) => o.id),
+        }
+      );
+
+      const displayStyleElement =
+        sourceBriefcase.elements.getElement(displayStyleId);
+      assert.isDefined(displayStyleElement);
+      const physObjId1 = physicalObjects[0].id;
+      const physObjId2 = physicalObjects[1].id;
+
+      sourceBriefcase.saveChanges();
+      await sourceBriefcase.pushChanges({
+        description: "source changes for inserting physical elements",
+        retainLocks: true,
+      });
+
+      sourceBriefcase.performCheckpoint(); // so we can use as a seed
+
+      targetIModelId = await HubWrappers.recreateIModel({
+        accessToken,
+        iTwinId,
+        iModelName: "target",
+        version0: sourceBriefcase.pathName,
+      });
+      assert.isTrue(Guid.isGuid(targetIModelId));
+
+      // download and open briefcase on target imodel
+      const targetBriefcase = await HubWrappers.downloadAndOpenBriefcase({
+        accessToken: await IModelHost.getAccessToken(),
+        iTwinId,
+        iModelId: targetIModelId,
+        asOf: IModelVersion.latest().toJSON(),
+      });
+      assert.isTrue(targetBriefcase.isBriefcaseDb());
+      assert.isFalse(targetBriefcase.isSnapshot);
+
+      await targetBriefcase.locks.acquireLocks({
+        shared: "0x10",
+        exclusive: "0x1",
+      });
+
+      const iModelExporterA = new IModelExporter(sourceBriefcase);
+      const transformer1 = new IModelTransformer(
+        iModelExporterA,
+        targetBriefcase,
+        {
+          danglingReferencesBehavior: "ignore",
+          wasSourceIModelCopiedToTarget: true,
+        }
+      );
+
+      // Configure logger to capture warning message about unresolved references
+      const messageStart =
+        "The following elements were never fully resolved:\n";
+      const messageEnd =
+        "\nThis indicates that either some references were excluded from the transformation\nor the source has dangling references.";
+      let unresolvedElementMessage: string | undefined;
+      const logWarning = (
+        _category: string,
+        message: string,
+        _metaData: LoggingMetaData
+      ) => {
+        if (message.startsWith(messageStart)) {
+          unresolvedElementMessage = message;
+        }
+      };
+      Logger.initialize(undefined, logWarning);
+      Logger.setLevelDefault(LogLevel.Warning);
+
+      // Act
+      await transformer1.process();
+      targetBriefcase.saveChanges();
+      await targetBriefcase.pushChanges({
+        description: "target changes for transformation",
+        retainLocks: true,
+      });
+
+      // Get target physical obj Ids
+      const targetPhysObjId1 =
+        transformer1.context.findTargetElementId(physObjId1);
+      const targetPhysObjId2 =
+        transformer1.context.findTargetElementId(physObjId2);
+
+      // delete referenced in target
+      targetBriefcase.elements.deleteElement(targetPhysObjId1);
+      targetBriefcase.elements.deleteElement(targetPhysObjId2);
+
+      // update referencer in source
+      const sourceDisplayStyleElementProps =
+        sourceBriefcase.elements.getElementProps(displayStyleElement.id);
+      sourceBriefcase.elements.updateElement({
+        ...sourceDisplayStyleElementProps,
+        userLabel: "DisplayStyleSourceElement",
+      });
+
+      targetBriefcase.saveChanges();
+      sourceBriefcase.saveChanges();
+      await sourceBriefcase.pushChanges({
+        description: "source changes for updating referencer",
+        retainLocks: true,
+      });
+      await targetBriefcase.pushChanges({
+        description: "target changes for deleting referenced elements",
+        retainLocks: true,
+      });
+
+      const transformer2 = new IModelTransformer(
+        iModelExporterA,
+        targetBriefcase,
+        {
+          danglingReferencesBehavior: "ignore",
+          argsForProcessChanges: {},
+        }
+      );
+
+      // Act
+      await transformer2.process();
+
+      // sourceCatergory element is needed to create physical elements and it is inserted in dictionary model
+      const sourceCategoryElement =
+        sourceBriefcase.elements.getElement(sourceCategoryId);
+      assert.isDefined(sourceCategoryElement);
+
+      // when sourceCategory element is created (which is also a spatial element), it creates a spatial element child
+      const sourceCategoryChild = sourceBriefcase.elements.queryChildren(
+        sourceCategoryElement.id
+      )[0];
+      const sourceCategoryChildElement =
+        sourceBriefcase.elements.getElement(sourceCategoryChild);
+      assert.isDefined(sourceCategoryChild);
+      assert.isDefined(sourceCategoryChildElement);
+
+      // Collect expected ids
+      const result = sourceBriefcase.queryEntityIds({
+        from: "BisCore.Element",
+        where:
+          "Model.Id = :dictionaryId AND ECInstanceId NOT IN (:sourceCategoryId,:sourceCategoryChild)",
+        bindings: {
+          dictionaryId: IModel.dictionaryId,
+          sourceCategoryId,
+          sourceCategoryChild,
+        },
+      });
+      const expectedIds = [...result].map((x) => `e${x}`);
+      // Collect actual ids
+      assert.isDefined(unresolvedElementMessage);
+      const actualIds = unresolvedElementMessage!
+        .split(messageStart)[1]
+        .split(messageEnd)[0]
+        .split(",");
+      // Assert
+      assert.equal(actualIds.length, 1);
+      assert.sameMembers(actualIds, expectedIds);
+      assert.isDefined(actualIds);
+      assert.isDefined(expectedIds);
+      transformer1.dispose();
+      transformer2.dispose();
+
+      await HubWrappers.closeAndDeleteBriefcaseDb(accessToken, sourceBriefcase);
+      await HubWrappers.closeAndDeleteBriefcaseDb(accessToken, targetBriefcase);
     } finally {
       try {
         await IModelHost.hubAccess.deleteIModel({

@@ -64,7 +64,6 @@ import {
   Id64,
   Id64String,
   Logger,
-  LoggingMetaData,
   LogLevel,
   OpenMode,
 } from "@itwin/core-bentley";
@@ -1362,81 +1361,6 @@ describe("IModelTransformer", () => {
     expect(targetChildIModelSubject.code.scope).eq(targetParentSubjectId);
     sourceIModelDb.close();
     targetIModelDb.close();
-  });
-
-  it.skip("should log unresolved references", async () => {
-    const iModelShared: SnapshotDb =
-      IModelTransformerTestUtils.createSharedIModel(outputDir, ["A", "B"]);
-    const iModelA: SnapshotDb = IModelTransformerTestUtils.createTeamIModel(
-      outputDir,
-      "A",
-      Point3d.create(0, 0, 0),
-      ColorDef.green
-    );
-    IModelTransformerTestUtils.assertTeamIModelContents(iModelA, "A");
-    const iModelExporterA = new IModelExporter(iModelA);
-
-    // Exclude element
-    const excludedId = iModelA.elements.queryElementIdByCode(
-      Subject.createCode(iModelA, IModel.rootSubjectId, "Context")
-    );
-    assert.isDefined(excludedId);
-    iModelExporterA.excludeElement(excludedId!);
-
-    const subjectId: Id64String = IModelTransformerTestUtils.querySubjectId(
-      iModelShared,
-      "A"
-    );
-    const transformerA2S = new IModelTransformer(
-      iModelExporterA,
-      iModelShared,
-      { targetScopeElementId: subjectId, danglingReferencesBehavior: "ignore" }
-    );
-    transformerA2S.context.remapElement(IModel.rootSubjectId, subjectId);
-
-    // Configure logger to capture warning message about unresolved references
-    const messageStart = "The following elements were never fully resolved:\n";
-    const messageEnd =
-      "\nThis indicates that either some references were excluded from the transformation\nor the source has dangling references.";
-
-    let unresolvedElementMessage: string | undefined;
-    const logWarning = (
-      _category: string,
-      message: string,
-      _metaData: LoggingMetaData
-    ) => {
-      if (message.startsWith(messageStart)) {
-        unresolvedElementMessage = message;
-      }
-    };
-    Logger.initialize(undefined, logWarning);
-    Logger.setLevelDefault(LogLevel.Warning);
-
-    // Act
-    await transformerA2S.process();
-
-    // Collect expected ids
-    const result = iModelA.queryEntityIds({
-      from: "BisCore.Element",
-      where: "Model.Id = :rootId AND ECInstanceId NOT IN (:excludedId)",
-      bindings: { rootId: IModel.rootSubjectId, excludedId },
-    });
-    const expectedIds = [...result].map((x) => `e${x}`);
-
-    // Collect actual ids
-    assert.isDefined(unresolvedElementMessage);
-    const actualIds = unresolvedElementMessage!
-      .split(messageStart)[1]
-      .split(messageEnd)[0]
-      .split(",");
-
-    // Assert
-    assert.equal(actualIds.length, 5);
-    assert.sameMembers(actualIds, expectedIds);
-
-    transformerA2S.dispose();
-    iModelA.close();
-    iModelShared.close();
   });
 
   it("should detect conflicting provenance scopes", async () => {
