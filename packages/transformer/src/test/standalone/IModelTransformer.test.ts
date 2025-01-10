@@ -3086,24 +3086,9 @@ describe("IModelTransformer", () => {
       rootSubject: { name: "deferred-element-with-aspects" },
     });
 
-    const testSchema1Path = IModelTransformerTestUtils.prepareOutputFile(
-      "IModelTransformer",
-      "TestSchema1.ecschema.xml"
-    );
-    // the only two ElementUniqueAspect's in bis are ignored by the transformer, so we add our own to test their export
-    IModelJsFs.writeFileSync(
-      testSchema1Path,
-      `<?xml version="1.0" encoding="UTF-8"?>
-      <ECSchema schemaName="TestSchema1" alias="ts1" version="01.00" xmlns="http://www.bentley.com/schemas/Bentley.ECXML.3.1">
-          <ECSchemaReference name="BisCore" version="01.00" alias="bis"/>
-          <ECEntityClass typeName="MyUniqueAspect" description="A test unique aspect" displayLabel="a test unique aspect" modifier="Sealed">
-            <BaseClass>bis:ElementUniqueAspect</BaseClass>
-            <ECProperty propertyName="MyProp1" typeName="string"/>
-        </ECEntityClass>
-      </ECSchema>`
-    );
-
-    await sourceDb.importSchemas([testSchema1Path]);
+    const testSchemaPath =
+      IModelTransformerTestUtils.getPathToSchemaWithUniqueAspect();
+    await sourceDb.importSchemas([testSchemaPath]);
 
     const myPhysicalModelId = PhysicalModel.insert(
       sourceDb,

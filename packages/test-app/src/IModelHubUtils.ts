@@ -97,12 +97,14 @@ export namespace IModelHubUtils {
   ): Promise<ChangesetId> {
     return (
       // eslint-disable-next-line @itwin/no-internal
-      await IModelHost.hubAccess.queryChangeset({
-        accessToken,
-        iModelId,
-        changeset: { index: changesetIndex },
-      })
-    ).id;
+      (
+        await IModelHost.hubAccess.queryChangeset({
+          accessToken,
+          iModelId,
+          changeset: { index: changesetIndex },
+        })
+      ).id
+    );
   }
 
   /** Temporarily needed to convert from the legacy ChangesetId to the now preferred ChangeSetIndex.
@@ -201,8 +203,8 @@ export namespace IModelHubUtils {
     return BriefcaseDb.open({
       fileName: briefcaseProps.fileName,
       readonly: briefcaseArg.briefcaseId
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        ? briefcaseArg.briefcaseId === BriefcaseIdValue.Unassigned
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+          briefcaseArg.briefcaseId === BriefcaseIdValue.Unassigned
         : false,
     });
   }

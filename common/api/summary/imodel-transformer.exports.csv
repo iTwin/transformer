@@ -1,5 +1,6 @@
 sep=;
 Release Tag;API Item
+beta;ChangedInstanceCustomRelationshipData
 public;ChangedInstanceIds
 public;ChangedInstanceIdsInitOptions = ExportChangesOptions &
 public;ChangedInstanceOps

@@ -139,6 +139,55 @@ export class IModelTransformerTestUtils extends TestUtils.IModelTestUtils {
     return iModelDb;
   }
 
+  /** Returns path to a schema which contains a multiAspect TestSchema2:MyMultiAspect.
+   * The schema is created in the output directory.
+   * The multi aspect has a prop 'MyProp1'.
+   * Users should import this schema in order to insert multi aspects.
+   */
+  public static getPathToSchemaWithMultiAspect(): string {
+    const testSchema1Path = IModelTransformerTestUtils.prepareOutputFile(
+      "IModelTransformer",
+      "TestSchema2.ecschema.xml"
+    );
+    IModelJsFs.writeFileSync(
+      testSchema1Path,
+      `<?xml version="1.0" encoding="UTF-8"?>
+        <ECSchema schemaName="TestSchema2" alias="ts1" version="01.00" xmlns="http://www.bentley.com/schemas/Bentley.ECXML.3.1">
+            <ECSchemaReference name="BisCore" version="01.00" alias="bis"/>
+            <ECEntityClass typeName="MyMultiAspect" description="A test unique aspect" displayLabel="a test unique aspect" modifier="Sealed">
+              <BaseClass>bis:ElementMultiAspect</BaseClass>
+              <ECProperty propertyName="MyProp1" typeName="string"/>
+          </ECEntityClass>
+        </ECSchema>`
+    );
+    return testSchema1Path;
+  }
+
+  /** Returns path to a schema which contains a UniqueAspect TestSchema1:MyUniqueAspect.
+   * The schema is created in the output directory.
+   * the only two ElementUniqueAspect's in bis are ignored by the transformer, so we can add our own to test their export
+   * The unique aspect has a prop 'MyProp1'.
+   * Users should import this schema in order to insert unique aspects.
+   */
+  public static getPathToSchemaWithUniqueAspect(): string {
+    const testSchema1Path = IModelTransformerTestUtils.prepareOutputFile(
+      "IModelTransformer",
+      "TestSchema1.ecschema.xml"
+    );
+    IModelJsFs.writeFileSync(
+      testSchema1Path,
+      `<?xml version="1.0" encoding="UTF-8"?>
+      <ECSchema schemaName="TestSchema1" alias="ts1" version="01.00" xmlns="http://www.bentley.com/schemas/Bentley.ECXML.3.1">
+          <ECSchemaReference name="BisCore" version="01.00" alias="bis"/>
+          <ECEntityClass typeName="MyUniqueAspect" description="A test unique aspect" displayLabel="a test unique aspect" modifier="Sealed">
+            <BaseClass>bis:ElementUniqueAspect</BaseClass>
+            <ECProperty propertyName="MyProp1" typeName="string"/>
+        </ECEntityClass>
+      </ECSchema>`
+    );
+    return testSchema1Path;
+  }
+
   public static populateTeamIModel(
     teamDb: IModelDb,
     teamName: string,

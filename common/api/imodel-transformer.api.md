@@ -22,6 +22,7 @@ import { EntityReference } from '@itwin/core-common';
 import { ExternalSourceAspect } from '@itwin/core-backend';
 import { ExternalSourceAspectProps } from '@itwin/core-common';
 import { FontProps } from '@itwin/core-common';
+import { Id64Arg } from '@itwin/core-bentley';
 import { Id64Array } from '@itwin/core-bentley';
 import { Id64Set } from '@itwin/core-bentley';
 import { Id64String } from '@itwin/core-bentley';
@@ -36,11 +37,34 @@ import { Relationship } from '@itwin/core-backend';
 import { RelationshipProps } from '@itwin/core-backend';
 import { Schema } from '@itwin/ecschema-metadata';
 import { SchemaKey } from '@itwin/ecschema-metadata';
+import { SqliteChangeOp } from '@itwin/core-backend';
+
+// @beta
+export interface ChangedInstanceCustomRelationshipData {
+    // (undocumented)
+    classFullName: string;
+    // (undocumented)
+    ecClassId: Id64String;
+    // (undocumented)
+    sourceIdOfRelationship: Id64String;
+    // (undocumented)
+    targetIdOfRelationship: Id64String;
+}
 
 // @public
 export class ChangedInstanceIds {
     constructor(db: IModelDb);
     addChange(change: ChangedECInstance): Promise<void>;
+    // @beta
+    addCustomAspectChange(changeType: SqliteChangeOp, ids: Id64Arg): void;
+    // @beta
+    addCustomCodeSpecChange(changeType: SqliteChangeOp, ids: Id64Arg): void;
+    // @beta
+    addCustomElementChange(changeType: SqliteChangeOp, ids: Id64Arg): void;
+    // @beta
+    addCustomModelChange(changeType: SqliteChangeOp, ids: Id64Arg): void;
+    // @beta
+    addCustomRelationshipChange(ecClassId: string, changeType: SqliteChangeOp, id: Id64String, sourceECInstanceId: Id64String, targetECInstanceId: Id64String): Promise<void>;
     // (undocumented)
     aspect: ChangedInstanceOps;
     // (undocumented)
@@ -49,7 +73,13 @@ export class ChangedInstanceIds {
     element: ChangedInstanceOps;
     // (undocumented)
     font: ChangedInstanceOps;
+    // @beta
+    getCustomRelationshipDataFromId(id: Id64String): ChangedInstanceCustomRelationshipData | undefined;
+    // (undocumented)
+    get hasCustomChanges(): boolean;
     static initialize(opts: ChangedInstanceIdsInitOptions): Promise<ChangedInstanceIds | undefined>;
+    // (undocumented)
+    get isEmpty(): boolean;
     // (undocumented)
     model: ChangedInstanceOps;
     // (undocumented)
@@ -68,6 +98,8 @@ export class ChangedInstanceOps {
     deleteIds: Set<string>;
     // (undocumented)
     insertIds: Set<string>;
+    // (undocumented)
+    get isEmpty(): boolean;
     // (undocumented)
     updateIds: Set<string>;
 }
@@ -124,6 +156,7 @@ export function hasEntityChanged(entity: Entity, entityProps: EntityProps, names
 // @beta
 export class IModelExporter {
     constructor(sourceDb: IModelDb, elementAspectsStrategy?: new (source: IModelDb, handler: ElementAspectsHandler) => ExportElementAspectsStrategy);
+    addCustomChanges(): void;
     excludeCodeSpec(codeSpecName: string): void;
     excludeElement(elementId: Id64String): void;
     excludeElementAspectClass(classFullName: string): void;
