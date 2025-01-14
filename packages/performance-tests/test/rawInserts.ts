@@ -2,12 +2,10 @@
  * Copyright (c) Bentley Systems, Incorporated. All rights reserved.
  * See LICENSE.md in the project root for license terms and full copyright notice.
  *--------------------------------------------------------------------------------------------*/
-import { ChangesetFileProps } from "@itwin/core-common";
 import {
   // eslint-disable-next-line @typescript-eslint/no-redeclare
   Element,
   ElementGroupsMembers,
-  IModelDb,
   SnapshotDb,
   StandaloneDb,
 } from "@itwin/core-backend";
@@ -19,7 +17,6 @@ import { TestIModel } from "./TestContext";
 import { generateTestIModel } from "./iModelUtils";
 import { initOutputFile, timed } from "./TestUtils";
 import assert from "assert";
-import fs from "fs";
 import path from "path";
 
 const loggerCategory = "Raw Inserts";
@@ -69,41 +66,6 @@ export default async function rawInserts(
   );
 
   sourceDb.saveChanges();
-
-  Logger.logInfo(
-    loggerCategory,
-    "Done. Starting changeset application of same content"
-  );
-
-  const changeset1 = createChangeset(sourceDb);
-  const changesetDbPath = initOutputFile("RawInsertsApply.bim", outputDir);
-  if (fs.existsSync(changesetDbPath)) fs.unlinkSync(changesetDbPath);
-  const changesetDb = StandaloneDb.createEmpty(changesetDbPath, {
-    rootSubject: { name: "RawInsertsApply" },
-  });
-
-  const [applyChangeSetTimer] = timed(() => {
-    // eslint-disable-next-line @itwin/no-internal, deprecation/deprecation
-    changesetDb.nativeDb.applyChangeset(changeset1);
-  });
-
-  reporter.addEntry(
-    "populate by applying changeset",
-    iModelName,
-    "time elapsed (seconds)",
-    applyChangeSetTimer?.elapsedSeconds ?? -1,
-    {
-      "Element Count": IModelTransformerTestUtils.count(
-        sourceDb,
-        Element.classFullName
-      ),
-      "Relationship Count": IModelTransformerTestUtils.count(
-        sourceDb,
-        ElementGroupsMembers.classFullName
-      ),
-      "Branch Name": branchName,
-    }
-  );
 
   Logger.logInfo(
     loggerCategory,
@@ -179,23 +141,6 @@ export default async function rawInserts(
   );
 
   sourceDb.close();
-  changesetDb.close();
   targetDb.close();
   targetNoProvDb.close();
-}
-
-// stolen from itwinjs-core: core/backend/src/test/changesets/ChangeMerging.test.ts
-function createChangeset(imodel: IModelDb): ChangesetFileProps {
-  // eslint-disable-next-line @itwin/no-internal, deprecation/deprecation
-  const changeset = imodel.nativeDb.startCreateChangeset();
-
-  // completeCreateChangeset deletes the file that startCreateChangeSet created.
-  // We make a copy of it now, before it does that.
-  const csFileName = path.join(outputDir, `${changeset.id}.changeset`);
-  fs.copyFileSync(changeset.pathname, csFileName);
-  changeset.pathname = csFileName;
-
-  // eslint-disable-next-line @itwin/no-internal, deprecation/deprecation
-  imodel.nativeDb.completeCreateChangeset({ index: 0 });
-  return changeset as any; // FIXME: bad peer deps
 }

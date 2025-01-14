@@ -1158,7 +1158,7 @@ describe("Catalog", () => {
       assert.equal(catalogContainerIds.size, 1); // expected value from createAcmeCatalog
       const catalogContainer =
         catalogDb.elements.getElement<DefinitionContainer>(
-          catalogContainerIds.values().next().value,
+          catalogContainerIds.values().next().value!,
           DefinitionContainer
         );
       const catalogContainerCodeSpec = catalogDb.codeSpecs.getById(
@@ -1326,7 +1326,7 @@ describe("Catalog", () => {
       assert.equal(catalogContainerIds.size, 1); // expected value from createTestCatalog
       const catalogContainer =
         catalogDb.elements.getElement<DefinitionContainer>(
-          catalogContainerIds.values().next().value,
+          catalogContainerIds.values().next().value!,
           DefinitionContainer
         );
       const catalogContainerCodeSpec = catalogDb.codeSpecs.getById(

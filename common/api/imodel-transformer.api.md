@@ -255,7 +255,6 @@ export class IModelTransformer extends IModelExportHandler {
         fn: (sourceElementId: Id64String, targetElementId: Id64String) => void;
         skipPropagateChangesToRootElements: boolean;
     }): void;
-    protected get hasDefinitionContainerDeletionFeature(): boolean;
     protected hasElementChanged(sourceElement: Element_2): boolean;
     readonly importer: IModelImporter;
     initElementProvenance(sourceElementId: Id64String, targetElementId: Id64String): ExternalSourceAspectProps;

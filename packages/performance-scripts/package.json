@@ -19,9 +19,9 @@
   "author": "Bentley Systems, Inc.",
   "license": "MIT",
   "devDependencies": {
-    "@itwin/build-tools": "4.6.0-dev.27",
-    "@itwin/core-backend": "^4.3.5",
-    "@types/node": "^18.11.5",
-    "typescript": "~5.3.3"
+    "@itwin/build-tools": "5.0.0-dev.34",
+    "@itwin/core-backend": "^5.0.0-dev.34",
+    "@types/node": "~20.9.5",
+    "typescript": "~5.6.2"
   }
 }

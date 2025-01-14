@@ -31,16 +31,7 @@ export interface IModelParams {
 // TODO: dedup with other packages
 // for testing purposes only, based on SetToStandalone.ts, force a snapshot to mimic a standalone iModel
 export function setToStandalone(iModelPath: string) {
-  // eslint-disable-next-line @itwin/no-internal, deprecation/deprecation
-  const nativeDb = new IModelHost.platform.DgnDb();
-  nativeDb.openIModel(iModelPath, OpenMode.ReadWrite);
-  nativeDb.setITwinId(Guid.empty); // empty iTwinId means "standalone"
-  nativeDb.saveChanges(); // save change to iTwinId
-  nativeDb.deleteAllTxns(); // necessary before resetting briefcaseId
-  nativeDb.resetBriefcaseId(BriefcaseIdValue.Unassigned); // standalone iModels should always have BriefcaseId unassigned
-  nativeDb.saveLocalValue("StandaloneEdit", JSON.stringify({ txns: true }));
-  nativeDb.saveChanges(); // save change to briefcaseId
-  nativeDb.closeFile();
+  StandaloneDb.convertToStandalone(iModelPath);
 }
 
 export function generateTestIModel(iModelParam: IModelParams): TestIModel {

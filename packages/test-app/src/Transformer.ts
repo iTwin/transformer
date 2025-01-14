@@ -424,8 +424,8 @@ export class Transformer extends IModelTransformer {
   }
 
   public logChangeTrackingMemoryUsed(): void {
-    if (this.targetDb.isBriefcase) {
-      const bytesUsed = this.targetDb.nativeDb.getChangeTrackingMemoryUsed(); // can't call this internal method unless targetDb has change tracking enabled
+    if (this.targetDb.isBriefcaseDb()) {
+      const bytesUsed = this.targetDb.txns.getChangeTrackingMemoryUsed();
       const mbUsed = Math.round((bytesUsed * 100) / (1024 * 1024)) / 100;
       Logger.logInfo(
         loggerCategory,

@@ -6,7 +6,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as Yargs from "yargs";
-import { assert, Guid, Logger, LogLevel, OpenMode } from "@itwin/core-bentley";
+import { assert, Guid, Logger, LogLevel } from "@itwin/core-bentley";
 import { ProjectsAccessClient } from "@itwin/projects-client";
 import {
   BriefcaseDb,
@@ -496,24 +496,9 @@ void (async () => {
 
       if (args.targetStandaloneDestination) {
         fs.copyFileSync(fileName, args.targetStandaloneDestination);
-        function setToStandalone(iModelPath: string) {
-          /* eslint-disable deprecation/deprecation */
-          const nativeDb = new IModelHost.platform.DgnDb();
-          nativeDb.openIModel(iModelPath, OpenMode.ReadWrite);
-          nativeDb.setITwinId(Guid.empty); // empty iTwinId means "standalone"
-          nativeDb.saveChanges(); // save change to iTwinId
-          nativeDb.deleteAllTxns(); // necessary before resetting briefcaseId
-          nativeDb.resetBriefcaseId(BriefcaseIdValue.Unassigned); // standalone iModels should always have BriefcaseId unassigned
-          nativeDb.saveLocalValue(
-            "StandaloneEdit",
-            JSON.stringify({ txns: true })
-          );
-          nativeDb.saveChanges(); // save change to briefcaseId
-          nativeDb.closeFile();
-        }
         /* eslint-enable deprecation/deprecation */
         targetDb.close();
-        setToStandalone(args.targetStandaloneDestination);
+        StandaloneDb.convertToStandalone(args.targetStandaloneDestination);
         await StandaloneDb.upgradeSchemas({ fileName });
         targetDb = StandaloneDb.openFile(args.targetStandaloneDestination);
       }

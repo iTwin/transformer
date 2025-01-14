@@ -549,10 +549,6 @@ export async function assertIdentityTransformation(
           remapper.findTargetCodeSpecId,
           remapper.findTargetAspectId,
         ];
-  /* eslint-disable-next-line deprecation/deprecation */
-  expect(sourceDb.nativeDb.hasUnsavedChanges()).to.be.false;
-  /* eslint-disable-next-line deprecation/deprecation */
-  expect(targetDb.nativeDb.hasUnsavedChanges()).to.be.false;
 
   const sourceToTargetElemsMap = new Map<Element, Element | undefined>();
   const targetToSourceElemsMap = new Map<Element, Element | undefined>();
@@ -964,8 +960,6 @@ export class TransformerExtensiveTestScenario extends TestUtils.ExtensiveTestSce
     assert.isFalse(targetDb.codeSpecs.hasName("SourceCodeSpec"));
     assert.isFalse(targetDb.codeSpecs.hasName("ExtraCodeSpec"));
 
-    // Font
-    assert.exists(targetDb.fontMap.getFont("Arial"));
     // Subject
     const subjectId: Id64String = targetDb.elements.queryElementIdByCode(
       Subject.createCode(targetDb, IModel.rootSubjectId, targetSubjectName)

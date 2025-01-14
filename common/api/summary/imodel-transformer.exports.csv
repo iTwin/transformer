@@ -1,25 +1,25 @@
 sep=;
-Release Tag;API Item
-public;ChangedInstanceIds
-public;ChangedInstanceIdsInitOptions = ExportChangesOptions &
-public;ChangedInstanceOps
-public;ExportChangesOptions =
-beta;ExporterInitOptions = ExportChangesOptions
-beta;ExportSchemaResult
-internal;hasEntityChanged(entity: Entity, entityProps: EntityProps, namesToIgnore?: Set
-beta;IModelExporter
-beta;class IModelExportHandler
-beta;IModelImporter
-beta;IModelImportOptions
-beta;IModelTransformer 
-beta;IModelTransformOptions
-alpha;initializeBranchProvenance(args: ProvenanceInitArgs): Promise
-beta;InitOptions
-beta;OptimizeGeometryOptions
-beta;ProcessChangesOptions = ExportChangesOptions &
-alpha;ProvenanceInitArgs
-alpha;ProvenanceInitResult
-beta;RelationshipPropsForDelete
-beta;TargetScopeProvenanceJsonProps
-beta;TemplateModelCloner 
-public;TransformerLoggerCategory
+Release Tag;API Item Type;API Item Name
+public;class;ChangedInstanceIds
+public;type;ChangedInstanceIdsInitOptions
+public;class;ChangedInstanceOps
+public;type;ExportChangesOptions
+beta;type;ExporterInitOptions
+beta;interface;ExportSchemaResult
+internal;function;hasEntityChanged
+beta;class;IModelExporter
+beta;class;IModelExportHandler
+beta;class;IModelImporter
+beta;interface;IModelImportOptions
+beta;class;IModelTransformer
+beta;interface;IModelTransformOptions
+alpha;function;initializeBranchProvenance
+beta;interface;InitOptions
+beta;interface;OptimizeGeometryOptions
+beta;type;ProcessChangesOptions
+alpha;interface;ProvenanceInitArgs
+alpha;interface;ProvenanceInitResult
+beta;interface;RelationshipPropsForDelete
+beta;interface;TargetScopeProvenanceJsonProps
+beta;class;TemplateModelCloner
+public;enum;TransformerLoggerCategory

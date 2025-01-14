@@ -52,7 +52,7 @@ export default async function prepareFork(context: TestCaseContext) {
       path.join(os.tmpdir(), "fork-test-schemas-dump-")
     );
     // eslint-disable-next-line @itwin/no-internal, deprecation/deprecation
-    sourceDb.nativeDb.exportSchemas(schemaDumpDir);
+    sourceDb.exportSchemas(schemaDumpDir);
     Logger.logInfo(loggerCategory, `dumped schemas to: ${schemaDumpDir}`);
     throw err;
   } finally {

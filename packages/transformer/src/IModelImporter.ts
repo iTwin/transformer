@@ -329,7 +329,7 @@ export class IModelImporter {
   protected onInsertElement(elementProps: ElementProps): Id64String {
     /* eslint-disable deprecation/deprecation */
     try {
-      const elementId = this.targetDb.nativeDb.insertElement(elementProps, {
+      const elementId = this.targetDb.elements.insertElement(elementProps, {
         forceUseId: this.options.preserveElementIdsForFiltering,
       });
       // set the id like [IModelDb.insertElement]($backend), does, the raw nativeDb method does not
@@ -340,7 +340,7 @@ export class IModelImporter {
       );
       this.trackProgress();
       if (this.options.simplifyElementGeometry) {
-        this.targetDb.nativeDb.simplifyElementGeometry({
+        this.targetDb.simplifyElementGeometry({
           id: elementId,
           convertBReps: true,
         });
@@ -378,7 +378,7 @@ export class IModelImporter {
     this.trackProgress();
     if (this.options.simplifyElementGeometry) {
       /* eslint-disable-next-line deprecation/deprecation */
-      this.targetDb.nativeDb.simplifyElementGeometry({
+      this.targetDb.simplifyElementGeometry({
         id: elementProps.id,
         convertBReps: true,
       });
@@ -796,7 +796,7 @@ export class IModelImporter {
   public optimizeGeometry(options: OptimizeGeometryOptions): void {
     if (options.inlineUniqueGeometryParts) {
       /* eslint-disable-next-line deprecation/deprecation */
-      const result = this.targetDb.nativeDb.inlineGeometryPartReferences();
+      const result = this.targetDb.inlineGeometryParts();
       Logger.logInfo(
         loggerCategory,
         `Inlined ${result.numRefsInlined} references to ${result.numCandidateParts} geometry parts and deleted ${result.numPartsDeleted} parts.`

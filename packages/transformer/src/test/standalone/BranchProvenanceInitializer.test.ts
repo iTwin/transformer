@@ -422,14 +422,5 @@ async function classicalTransformerBranchInit(
 }
 
 function setToStandalone(iModelName: string) {
-  // eslint-disable-next-line deprecation/deprecation
-  const nativeDb = new IModelHost.platform.DgnDb();
-  nativeDb.openIModel(iModelName, OpenMode.ReadWrite);
-  nativeDb.setITwinId(Guid.empty); // empty iTwinId means "standalone"
-  nativeDb.saveChanges(); // save change to iTwinId
-  nativeDb.deleteAllTxns(); // necessary before resetting briefcaseId
-  nativeDb.resetBriefcaseId(BriefcaseIdValue.Unassigned); // standalone iModels should always have BriefcaseId unassigned
-  nativeDb.saveLocalValue("StandaloneEdit", JSON.stringify({ txns: true }));
-  nativeDb.saveChanges(); // save change to briefcaseId
-  nativeDb.closeFile();
+  StandaloneDb.convertToStandalone(iModelName);
 }

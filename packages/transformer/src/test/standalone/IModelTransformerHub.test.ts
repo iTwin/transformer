@@ -503,7 +503,7 @@ describe("IModelTransformerHub", () => {
         );
         targetDb.saveChanges();
         // eslint-disable-next-line deprecation/deprecation
-        assert.isFalse(targetDb.nativeDb.hasPendingTxns());
+        assert.isFalse(targetDb.txns.hasPendingTxns);
         await targetDb.pushChanges({
           accessToken,
           description: "Should not actually push because there are no changes",
@@ -931,12 +931,12 @@ describe("IModelTransformerHub", () => {
       // push sourceDb schema changes
       /* eslint-disable deprecation/deprecation */
       assert.equal(
-        sourceDb.nativeDb.hasPendingTxns(),
+        sourceDb.txns.hasPendingTxns,
         expectedHasPendingTxns,
         "Expect importSchemas to have saved changes"
       );
       assert.isFalse(
-        sourceDb.nativeDb.hasUnsavedChanges(),
+        sourceDb.txns.hasUnsavedChanges,
         "Expect no unsaved changes after importSchemas"
       );
       await sourceDb.pushChanges({
@@ -950,11 +950,11 @@ describe("IModelTransformerHub", () => {
         GenericSchema.schemaFilePath,
       ]);
       assert.isFalse(
-        sourceDb.nativeDb.hasPendingTxns(),
+        sourceDb.txns.hasPendingTxns,
         "Expect importSchemas to be a no-op"
       );
       assert.isFalse(
-        sourceDb.nativeDb.hasUnsavedChanges(),
+        sourceDb.txns.hasUnsavedChanges,
         "Expect importSchemas to be a no-op"
       );
       /* eslint-enable deprecation/deprecation */
@@ -1045,7 +1045,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
 
     const masterSeed: TimelineIModelState = {
@@ -1141,7 +1141,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
     const noFedGuidElemIds = masterSeedDb.queryEntityIds({
       from: "Bis.Element",
@@ -1258,7 +1258,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
     const noFedGuidElemIds = masterSeedDb.queryEntityIds({
       from: "Bis.Element",
@@ -1410,7 +1410,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
 
     // 20 will be deleted, so it's important to know remapping deleted elements still works if there is no fedguid
@@ -2259,7 +2259,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
     const masterSeed: TimelineIModelState = {
       // HACK: we know this will only be used for seeding via its path and performCheckpoint
@@ -3536,7 +3536,7 @@ describe("IModelTransformerHub", () => {
       rootSubject: { name: masterIModelName },
     });
     // eslint-disable-next-line deprecation/deprecation
-    masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
+    // masterSeedDb.nativeDb.setITwinId(iTwinId); // workaround for "ContextId was not properly setup in the checkpoint" issue
     populateTimelineSeed(masterSeedDb, masterSeedState);
 
     const noFedGuidElemIds = masterSeedDb.queryEntityIds({

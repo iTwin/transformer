@@ -74,7 +74,7 @@ export async function initializeBranchProvenance(
       (s) =>
         assert(
           s.step() === DbResult.BE_SQLITE_DONE,
-          args.branch.nativeDb.getLastError()
+          args.branch.getLastError()
         )
     );
     const masterPath = args.master.pathName;
@@ -86,7 +86,7 @@ export async function initializeBranchProvenance(
       (s) =>
         assert(
           s.step() === DbResult.BE_SQLITE_DONE,
-          args.branch.nativeDb.getLastError()
+          args.branch.getLastError()
         )
     );
     args.branch.withSqliteStatement(
@@ -102,7 +102,7 @@ export async function initializeBranchProvenance(
       (s) =>
         assert(
           s.step() === DbResult.BE_SQLITE_DONE,
-          args.branch.nativeDb.getLastError()
+          args.branch.getLastError()
         )
     );
     args.branch.clearCaches(); // statements write lock attached db (clearing statement cache does not fix this)
@@ -112,13 +112,13 @@ export async function initializeBranchProvenance(
       if (res !== DbResult.BE_SQLITE_DONE)
         Logger.logTrace(
           "initializeBranchProvenance",
-          `Error detaching db (we will close anyway): ${args.branch.nativeDb.getLastError()}`
+          `Error detaching db (we will close anyway): ${args.branch.getLastError()}`
         );
       // this is the case until native side changes
       // eslint-disable-next-line @itwin/no-internal
       assert(
         res === DbResult.BE_SQLITE_ERROR,
-        args.branch.nativeDb.getLastError()
+        args.branch.getLastError()
       );
     });
     /* eslint-enable deprecation/deprecation */
